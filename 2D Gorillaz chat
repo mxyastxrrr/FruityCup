@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta charset="UTF-8">
+<title>Talk With 2D</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<h1>Talk With 2D</h1>
+
+<div id="controls">
+
+<label>
+<input type="checkbox" id="voiceToggle">
+Voice Responses
+</label>
+
+<label>
+<input type="checkbox" id="singToggle">
+Occasional Singing
+</label>
+
+<label>
+<input type="checkbox" id="musicToggle" onchange="toggleMusic()">
+Background Music
+</label>
+
+<button onclick="startListening()">🎤 Talk</button>
+
+</div>
+
+<audio id="bgMusic" loop>
+<source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<div id="chatbox"></div>
+
+<div id="typing" class="typing hidden">
+2D is typing...
+</div>
+
+<div id="inputArea">
+
+<input id="input" placeholder="Talk to 2D...">
+
+<button onclick="send()">Send</button>
+
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
+
+body{
+background:#0f0f0f;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+
+#controls{
+margin-bottom:10px;
+}
+
+#chatbox{
+width:70%;
+height:420px;
+margin:auto;
+background:#111;
+border-radius:12px;
+overflow-y:auto;
+padding:20px;
+display:flex;
+flex-direction:column;
+gap:10px;
+}
+
+.message{
+max-width:70%;
+padding:12px;
+border-radius:14px;
+font-size:14px;
+line-height:1.4;
+}
+
+.user{
+background:#3a6cff;
+color:white;
+align-self:flex-end;
+}
+
+.bot{
+background:#2b2b2b;
+color:white;
+align-self:flex-start;
+}
+
+.typing{
+color:#888;
+margin-top:10px;
+}
+
+.hidden{
+display:none;
+}
+
+input{
+width:55%;
+padding:10px;
+border-radius:6px;
+border:none;
+}
+
+button{
+padding:10px 15px;
+background:#ff2e63;
+color:white;
+border:none;
+border-radius:6px;
+cursor:pointer;
+}
+
+// Stored messages & memory
+let messages = JSON.parse(localStorage.getItem("chatHistory")) || []
+let longMemory = JSON.parse(localStorage.getItem("longMemory")) || []
+
+const chatbox = document.getElementById("chatbox")
+const typing = document.getElementById("typing")
+
+// Load previous chat
+function loadHistory(){
+    messages.forEach(msg=>{
+        createBubble(msg.role,msg.content)
+    })
+}
+
+loadHistory()
+
+// Smarter 2D personality
+let personality = `
+You are 2D from Gorillaz.
+
+Personality:
+- Friendly
+- Chill and relaxed
+- Sometimes clueless
+- Loves music and random thoughts
+
+Speaking style:
+- Speaks casually, naturally
+- Occasionally hums or sings short lines
+- Can talk about band life, stories, music, or anything the user says
+- Respond however feels natural, no fixed emotions
+
+Do NOT act like an AI.
+Talk like a real person chatting.
+`
+
+// Send message function
+async function send(){
+
+    let inputBox = document.getElementById("input")
+    let input = inputBox.value
+    if(input.trim()==="") return
+
+    addMessage("user",input)
+    inputBox.value=""
+
+    showTyping()
+
+    let singing = document.getElementById("singToggle").checked
+
+    let systemPrompt = personality
+    if(singing)
+        systemPrompt += " Occasionally sing a short lyric-like line if it feels natural."
+
+    const response = await fetch("https://api.openai.com/v1/chat/completions",{
+        method:"POST",
+        headers:{
+            "Content-Type":"application/json",
+            "Authorization":"Bearer YOUR_API_KEY"
+        },
+        body:JSON.stringify({
+            model:"gpt-4.1-mini",
+            messages:[
+                {role:"system", content: systemPrompt},
+                ...longMemory,
+                ...messages
+            ]
+        })
+    })
+
+    let data = await response.json()
+    hideTyping()
+    let reply = data.choices[0].message.content
+    addMessage("assistant",reply)
+    speak(reply)
+}
+
+// Add message bubble
+function createBubble(role,text){
+    let div = document.createElement("div")
+    div.className = "message " + (role==="user"?"user":"bot")
+    div.textContent = text
+    chatbox.appendChild(div)
+    chatbox.scrollTop = chatbox.scrollHeight
+}
+
+// Save message & memory
+function addMessage(role,text){
+    messages.push({role:role,content:text})
+    if(messages.length>20){
+        longMemory.push(messages.shift())
+        localStorage.setItem("longMemory",JSON.stringify(longMemory))
+    }
+    localStorage.setItem("chatHistory",JSON.stringify(messages))
+    createBubble(role,text)
+}
+
+// Typing animation
+function showTyping(){ typing.classList.remove("hidden") }
+function hideTyping(){ typing.classList.add("hidden") }
+
+// Voice speaking
+function speak(text){
+    let voiceEnabled = document.getElementById("voiceToggle").checked
+    if(!voiceEnabled) return
+    let speech = new SpeechSynthesisUtterance(text)
+    speech.pitch = 1.2
+    speech.rate = 0.95
+    speechSynthesis.speak(speech)
+}
+
+// Background music toggle
+function toggleMusic(){
+    let music = document.getElementById("bgMusic")
+    let enabled = document.getElementById("musicToggle").checked
+    if(enabled) music.play()
+    else music.pause()
+}
+
+// Microphone input
+function startListening(){
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if(!SpeechRecognition){
+        alert("Speech recognition not supported in this browser")
+        return
+    }
+    const recognition = new SpeechRecognition()
+    recognition.onresult = function(event){
+        let transcript = event.results[0][0].transcript
+        document.getElementById("input").value = transcript
+        send()
+    }
+    recognition.start()
+}
+
+gorillaz-2d-chat/
+│
+├─ index.html
+├─ style.css
+├─ script.js
+├─ 2d.png          (avatar image)
+├─ music.mp3        (optional background music)
