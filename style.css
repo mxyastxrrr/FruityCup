@@ -1,0 +1,64 @@
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+    background-color: #f0f0f0;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #ffffff;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+}
+
+.profile {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.profile img {
+    border-radius: 50%;
+    width: 50px;
+    height: 50px;
+    margin-right: 10px;
+}
+
+.profile .username {
+    font-weight: bold;
+    color: #333;
+}
+
+.message {
+    padding: 10px 15px;
+    border-radius: 10px;
+    margin: 5px 0;
+    max-width: 60%;
+}
+
+.message.sent {
+    background-color: #dcf8c6;
+    align-self: flex-end;
+}
+
+.message.received {
+    background-color: #ffffff;
+    align-self: flex-start;
+    border: 1px solid #e0e0e0;
+}
+
+.typography {
+    font-size: 16px;
+    color: #444;
+    line-height: 1.5;
+}
+
+.header {
+    background-color: #4A90E2;
+    color: #fff;
+    padding: 15px;
+    text-align: center;
+}
